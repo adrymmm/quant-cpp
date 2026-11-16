@@ -1,0 +1,34 @@
+cmake_minimum_required(VERSION 3.24)
+project(quant_cpp LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)          # -std=c++20, not gnu++20
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)  # for clangd
+
+set (SANITIZER "" CACHE STRING "")
+
+# check if sanitizer var is set
+if (SANITIZER)
+
+    add_compile_options(-fsanitize=${SANITIZER},undefined -fno-omit-frame-pointer)
+    # if sanitizer is TSan add vptr flag 
+    if (SANITIZER STREQUAL "thread")
+        add_compile_options(-fno-sanitize=vptr)
+    endif()
+
+    add_link_options(-fsanitize=${SANITIZER},undefined)
+endif()
+
+include(FetchContent)
+FetchContent_Declare(googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG v1.17.0)
+FetchContent_MakeAvailable(googletest)
+
+add_library(project_warnings INTERFACE)
+find_package(Threads REQUIRED)
+target_compile_options(project_warnings INTERFACE -Wall -Wextra -Wpedantic -Wshadow)
+
+enable_testing()
+add_subdirectory(tests)
