@@ -1,6 +1,7 @@
 add_library(quant_pricing
     pricing/payoff.cpp
     pricing/black_scholes.cpp
+    pricing/monte_carlo.cpp
 )
 add_library(quant::pricing ALIAS quant_pricing)
 
