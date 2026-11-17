@@ -1,5 +1,6 @@
 include(GoogleTest)
 
-add_executable(smoke_test smoke_test.cpp)
-target_link_libraries(smoke_test PRIVATE project_warnings GTest::gtest_main)
-gtest_discover_tests(smoke_test PROPERTIES TIMEOUT 10)
+add_executable(quant_tests test_payoff.cpp)
+target_link_libraries(quant_tests PRIVATE project_warnings quant::pricing GTest::gtest_main)
+gtest_discover_tests(quant_tests PROPERTIES TIMEOUT 10)
+
