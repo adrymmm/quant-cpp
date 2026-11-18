@@ -24,3 +24,14 @@ TEST(MonteCarlo, CallThreeSEBlackScholes) {
     EXPECT_LT(std::abs(mc_res.price - c_bs), 3.0 * mc_res.std_error) << "mc=" << mc_res.price 
         << " bs=" << c_bs  << " se=" << mc_res.std_error;
 }
+
+TEST(MonteCarlo, PutThreeSEBlackScholes) {
+    std::mt19937_64 rng{42};
+    const qp::PutPayoff put{hull_K};
+    
+    const qp::McResult mc_res = qp::mc_price(put, hull_mc, 100'000, rng);
+    const double p_bs = qp::black_scholes_put(hull_mc.S0, hull_K, hull_mc.r, hull_mc.sigma, hull_mc.T);
+    
+    EXPECT_LT(std::abs(mc_res.price - p_bs), 3.0 * mc_res.std_error) << "mc=" << mc_res.price 
+        << " bs=" << p_bs  << " se=" << mc_res.std_error;
+}
