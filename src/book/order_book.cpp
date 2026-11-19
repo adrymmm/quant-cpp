@@ -1,13 +1,15 @@
 #include "quant/book/order_book.hpp"
+#include <stdexcept>
+#include <algorithm>
 
 namespace quant::book {
 
-[[nodiscard]] std::optional<Price> OrderBook::best_bid() const {
+std::optional<Price> OrderBook::best_bid() const {
     if (bids_.empty()) return std::nullopt;
     return bids_.begin()->first;
 }
 
-[[nodiscard]] std::optional<Price> OrderBook::best_ask() const {
+std::optional<Price> OrderBook::best_ask() const {
     if (asks_.empty()) return std::nullopt;
     return asks_.begin()->first;
 }
@@ -49,8 +51,32 @@ std::vector<Trade> OrderBook::match_against(BookSide& opposite, OrderId id, Side
     return trades;
 }
 
+template <typename BookSide>
+void OrderBook::rest(BookSide& own, const Order& order, Quantity remainder) {
+    if (remainder <= 0) return;
 
-[[nodiscard]] std::vector<Trade> OrderBook::add_limit(const Order& order) {
+    auto& level = own[order.price]; //get price level or create new one
+    Order resting = order;
+    resting.quantity = remainder;
+    // appending to end of price level list and get iterator for idx
+    auto it = level.insert(level.end(), resting);
+    index_.emplace(order.id, OrderLocation{order.price, it, order.side});
+}
+
+std::vector<Trade> OrderBook::add_limit(const Order& order) {
+    if (order.quantity <= 0) throw std::invalid_argument("quantity must be positive");
+    if (index_.contains(order.id)) throw std::invalid_argument("duplicate order id");
+    std::vector<Trade> trades;
+    Quantity remainder = order.quantity;
+    if (order.side == Side::Buy) {
+        trades = match_against(asks_, order.id, order.side, remainder, order.price);
+        rest(bids_, order, remainder);
+    } 
+    else {
+        trades = match_against(bids_, order.id, order.side, remainder, order.price);
+        rest(asks_, order, remainder);
+    }
+    return trades;
 }
 
 } //namespace quant::book 

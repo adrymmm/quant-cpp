@@ -59,7 +59,9 @@ class OrderBook {
         using Level = std::list<Order>;
         struct OrderLocation{  Price price; Level::iterator it; Side side; };
         template <typename BookSide>
-        // remainder passed by value to be modified in-place
+        void rest(BookSide& own, const Order& order, Quantity remainder);
+        // fills against opposite best-first; decrements remainder by filled quantity. 
+        template <typename BookSide>
         std::vector<Trade> match_against(BookSide& opposite, OrderId id, Side side, Quantity& remainder, std::optional<Price> limit );
         std::map<Price, Level, std::greater<Price>> bids_;
         std::map<Price, Level> asks_;
