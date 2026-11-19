@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(quant_cpp LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
