@@ -13,3 +13,17 @@ target_include_directories(quant_pricing
 target_compile_features(quant_pricing PUBLIC cxx_std_20)
 
 target_link_libraries(quant_pricing PRIVATE project_warnings)
+
+add_library(quant_book
+    book/order_book.cpp
+)
+add_library(quant::book ALIAS quant_book)
+
+target_include_directories(quant_book
+    PUBLIC  ${PROJECT_SOURCE_DIR}/include
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_compile_features(quant_book PUBLIC cxx_std_20)
+
+target_link_libraries(quant_book PRIVATE project_warnings)
