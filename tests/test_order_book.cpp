@@ -197,3 +197,43 @@ TEST(BookTest, IndexConsistentAfterFill) {
     // check if remaining order was removed
     EXPECT_FALSE(book.best_ask());
 }
+
+TEST(BookTest, MarketDrainsBook) {
+    qb::OrderBook book;
+
+    const qb::Order sell1{.price = 100, .quantity = 5, .id=1, .side=qb::Side::Sell};
+    const qb::Order sell2{.price = 101, .quantity = 5, .id=2, .side=qb::Side::Sell};
+    const auto t1 = book.add_limit(sell1);
+    const auto t2 = book.add_limit(sell2);
+    ASSERT_TRUE(t1.empty());
+    ASSERT_TRUE(t2.empty());
+    
+    const auto t3 = book.add_market(3, qb::Side::Buy, 15);
+    ASSERT_EQ(t3.size(), 2u);
+
+    EXPECT_EQ(t3[0], (qb::Trade{ .aggressor_id = 3, .resting_id = 1,
+                                      .price = 100,       .quantity = 5,
+                                      .aggressor_side = qb::Side::Buy,}));
+    EXPECT_EQ(t3[1], (qb::Trade{ .aggressor_id = 3, .resting_id = 2,
+                                      .price = 101,       .quantity = 5,
+                                      .aggressor_side = qb::Side::Buy,}));
+    EXPECT_FALSE(book.best_ask());
+    EXPECT_FALSE(book.best_bid());
+}
+
+TEST(BookTest, InvalidMarketThrows) {
+    qb::OrderBook book;
+    EXPECT_THROW((void)book.add_market(1, qb::Side::Buy, 0), std::invalid_argument);
+    EXPECT_THROW((void)book.add_market(2, qb::Side::Buy, -3), std::invalid_argument);
+
+    const qb::Order sell1{.price = 100, .quantity = 10, .id=5, .side=qb::Side::Sell};
+    const auto t1 = book.add_limit(sell1);
+    EXPECT_TRUE(t1.empty());
+    // duplicate id
+    EXPECT_THROW((void)book.add_market(5, qb::Side::Buy, 3), std::invalid_argument);
+    const auto t2 = book.add_market(6, qb::Side::Buy, 10);
+    ASSERT_EQ(t2.size(), 1u);
+    EXPECT_EQ(t2[0], (qb::Trade{ .aggressor_id = 6, .resting_id = 5,
+                                      .price = 100,       .quantity = 10,
+                                      .aggressor_side = qb::Side::Buy,}));
+}
