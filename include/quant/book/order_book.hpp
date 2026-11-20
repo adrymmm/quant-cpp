@@ -60,6 +60,8 @@ class OrderBook {
         struct OrderLocation{  Price price; Level::iterator it; Side side; };
         template <typename BookSide>
         void rest(BookSide& own, const Order& order, Quantity remainder);
+        template <typename BookSide>
+        void erase_order(BookSide& side, const OrderLocation& loc);
         // fills against opposite best-first; decrements remainder by filled quantity. 
         template <typename BookSide>
         std::vector<Trade> match_against(BookSide& opposite, OrderId id, Side side, Quantity& remainder, std::optional<Price> limit );

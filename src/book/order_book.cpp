@@ -78,6 +78,32 @@ std::vector<Trade> OrderBook::add_limit(const Order& order) {
     }
     return trades;
 }
+template <typename BookSide> void OrderBook::erase_order(BookSide& side, const OrderLocation& loc) {
+    auto level_it = side.find(loc.price);
+    auto& level = level_it->second;
+    //erase order from level
+    level.erase(loc.it);
+    // if price level empty remove from map
+    if (level.empty()) {
+        side.erase(level_it);
+    }
+}
+
+bool OrderBook::cancel(OrderId id) {
+    auto it = index_.find(id);
+    // if id not found .find returns .end()
+    if (it == index_.end()) return false;
+    const auto& loc = it->second;
+
+    if (loc.side == Side::Buy) {
+        erase_order(bids_, loc);
+    }
+    else {
+        erase_order(asks_, loc);
+    }
+    index_.erase(id);
+    return true;
+}
 
 } //namespace quant::book 
 
