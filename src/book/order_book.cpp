@@ -78,6 +78,18 @@ std::vector<Trade> OrderBook::add_limit(const Order& order) {
     }
     return trades;
 }
+
+std::vector<Trade> OrderBook::add_market(OrderId id, Side side, Quantity quantity) {
+    if (quantity <= 0) throw std::invalid_argument("quantity must be positive");
+    if (index_.contains(id)) throw std::invalid_argument("duplicate order id");
+    if (side == Side::Buy) {
+        return match_against(asks_, id, side, quantity, std::nullopt);
+    } 
+    else {
+        return match_against(bids_, id, side, quantity, std::nullopt);
+    }
+}
+
 template <typename BookSide> void OrderBook::erase_order(BookSide& side, const OrderLocation& loc) {
     auto level_it = side.find(loc.price);
     auto& level = level_it->second;
