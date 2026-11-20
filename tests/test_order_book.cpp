@@ -121,3 +121,79 @@ TEST(BookTest, InvalidLimitThrows) {
                                       .price = 100,       .quantity = 10,
                                       .aggressor_side = qb::Side::Sell,}));
 }
+
+TEST(BookTest, CancelUnknownID) {
+    qb::OrderBook book;
+    // empty cancel is false
+    EXPECT_FALSE(book.cancel(42));
+    const qb::Order sell{.price = 100, .quantity = 10, .id=1, .side=qb::Side::Sell};
+    const auto trade = book.add_limit(sell);
+    EXPECT_TRUE(trade.empty());
+
+    EXPECT_TRUE(book.cancel(1));
+    EXPECT_FALSE(book.cancel(1));
+    EXPECT_EQ(book.best_ask(), std::nullopt);
+}
+
+TEST(BookTest, CancelMidLevel) {
+    qb::OrderBook book;
+
+    const qb::Order sell1{.price = 100, .quantity = 5, .id=1, .side=qb::Side::Sell};
+    const qb::Order sell2{.price = 100, .quantity = 5, .id=2, .side=qb::Side::Sell};
+    const qb::Order sell3{.price = 100, .quantity = 5, .id=3, .side=qb::Side::Sell};
+
+    const auto t1 = book.add_limit(sell1);
+    const auto t2 = book.add_limit(sell2);
+    const auto t3 = book.add_limit(sell3);
+
+    EXPECT_TRUE(t1.empty());
+    EXPECT_TRUE(t2.empty());
+    EXPECT_TRUE(t3.empty());
+
+    EXPECT_TRUE(book.cancel(2));
+    const qb::Order buy{.price = 100, .quantity = 10, .id=4, .side=qb::Side::Buy};
+    const auto trades = book.add_limit(buy);
+    ASSERT_EQ(trades.size(), 2u);
+
+    EXPECT_EQ(trades[0], (qb::Trade{ .aggressor_id = 4, .resting_id = 1,
+                                      .price = 100,       .quantity = 5,
+                                      .aggressor_side = qb::Side::Buy,}));
+
+    EXPECT_EQ(trades[1], (qb::Trade{ .aggressor_id = 4, .resting_id = 3,
+                                      .price = 100,       .quantity = 5,
+                                      .aggressor_side = qb::Side::Buy,}));
+}
+
+TEST(BookTest, IndexConsistentAfterFill) {
+    qb::OrderBook book;
+
+    const qb::Order sell1{.price = 100, .quantity = 10, .id=1, .side=qb::Side::Sell};
+    const qb::Order buy1{.price = 100, .quantity = 10, .id=2, .side=qb::Side::Buy};
+
+    const auto t1 = book.add_limit(sell1);
+    const auto t2 = book.add_limit(buy1);
+    ASSERT_TRUE(t1.empty());
+    EXPECT_EQ(t2.size(), 1u);
+    EXPECT_EQ(t2[0], (qb::Trade{ .aggressor_id = 2, .resting_id = 1,
+                                      .price = 100,       .quantity = 10,
+                                      .aggressor_side = qb::Side::Buy,}));
+    
+    // order 1 exhausted by order 2, cancel should return false
+    EXPECT_FALSE(book.cancel(1));
+
+    const qb::Order sell2{.price = 100, .quantity = 10, .id=3, .side=qb::Side::Sell};
+    const qb::Order buy2{.price = 100, .quantity = 6, .id=4, .side=qb::Side::Buy};
+
+    const auto t3 = book.add_limit(sell2);
+    const auto t4 = book.add_limit(buy2);
+    ASSERT_TRUE(t3.empty());
+    EXPECT_EQ(t4.size(), 1u);
+    EXPECT_EQ(t4[0], (qb::Trade{ .aggressor_id = 4, .resting_id = 3,
+                                      .price = 100,       .quantity = 6,
+                                      .aggressor_side = qb::Side::Buy,}));
+    
+    // partial fill means cancel works and returns true
+    EXPECT_TRUE(book.cancel(3));
+    // check if remaining order was removed
+    EXPECT_FALSE(book.best_ask());
+}
