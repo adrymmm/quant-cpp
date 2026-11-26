@@ -6,22 +6,20 @@
 #include "quant/book/order_book.hpp"
 namespace quant::bench {
 
-namespace qb = quant::book;
-
 struct Limit {
-    qb::Side side;
-    qb::OrderId id;
-    qb::Price price;
-    qb::Quantity quantity;
+    quant::book::Side side;
+    quant::book::OrderId id;
+    quant::book::Price price;
+    quant::book::Quantity quantity;
 };
 
 struct Market {
-    qb::Side side;
-    qb::Quantity quantity;
+    quant::book::Side side;
+    quant::book::Quantity quantity;
 };
 
 struct Cancel {
-    qb::OrderId id;
+    quant::book::OrderId id;
 };
 
 using Message = std::variant<Limit, Market, Cancel>;
@@ -32,8 +30,8 @@ struct StreamParams {
     int cancel_pct = 45;
     int market_pct = 5;
     double mean_geom_offset = 2.00;
-    qb::Price fixed_mid = 10'000;
-    qb::Quantity max_qty = 100;
+    quant::book::Price fixed_mid = 10'000;
+    quant::book::Quantity max_qty = 100;
     std::uint64_t seed = 42;
 };
 
@@ -42,6 +40,6 @@ struct StreamParams {
 // Mix ~ limit/cancel/market pcts.
 // Cancels hit live ids; none live -> limit instead.
 // Throws std::invalid_argument on bad params.
-std::vector<Message> generate_stream(const StreamParams& params);
+[[nodiscard]] std::vector<Message> generate_stream(const StreamParams& params);
 
 } // namespace quant::bench
